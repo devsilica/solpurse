@@ -1,11 +1,18 @@
 import { createClient, MicroLamports } from "@solana/kit";
 import { walletSigner } from "@solana/kit-plugin-wallet";
 import { solanaRpc, rpcAirdrop } from "@solana/kit-plugin-rpc";
-import { tokenProgram } from "@solana-program/token";
+import {
+  associatedTokenProgram,
+  tokenProgram,
+} from "@solana-program/token";
 import { memoProgram } from "@solana-program/memo";
 import { systemProgram } from "@solana-program/system";
 
-export type ClusterMoniker = "devnet" | "testnet" | "mainnet" | "localnet";
+export type ClusterMoniker =
+  | "devnet"
+  | "testnet"
+  | "mainnet"
+  | "localnet";
 
 export const CLUSTERS: ClusterMoniker[] = [
   "devnet",
@@ -32,8 +39,9 @@ const WALLET_CHAINS: Record<ClusterMoniker, `solana:${string}`> = {
   devnet: "solana:devnet",
   testnet: "solana:testnet",
   mainnet: "solana:mainnet",
-  // Wallets do not advertise a localnet chain. Sign against devnet so wallets
-  // stay discoverable while the RPC below targets the local validator.
+
+  // Wallets do not advertise a localnet chain.
+  // Keep wallets discoverable while the RPC targets localnet.
   localnet: "solana:devnet",
 };
 
@@ -51,20 +59,23 @@ export type RpcUrlOverrides = {
 };
 
 /**
- * Builds the app-wide kit client. `urls` overrides the cluster's default RPC
- * endpoints — used by tests to point the client at an ephemeral Surfpool
- * instance on dynamic ports.
+ * Builds the app-wide Solana Kit client.
  */
 export function createAppClient(
   cluster: ClusterMoniker,
   urls?: RpcUrlOverrides
 ) {
   return createClient()
-    .use(walletSigner({ chain: WALLET_CHAINS[cluster] }))
+    .use(
+      walletSigner({
+        chain: WALLET_CHAINS[cluster],
+      })
+    )
     .use(
       solanaRpc({
         rpcUrl: urls?.rpcUrl ?? CLUSTER_URLS[cluster],
-        rpcSubscriptionsUrl: urls?.rpcSubscriptionsUrl ?? WS_URLS[cluster],
+        rpcSubscriptionsUrl:
+          urls?.rpcSubscriptionsUrl ?? WS_URLS[cluster],
         transactionConfig: {
           microLamportsPerComputeUnit: 1000n as MicroLamports,
         },
@@ -73,6 +84,7 @@ export function createAppClient(
     .use(rpcAirdrop())
     .use(systemProgram())
     .use(tokenProgram())
+    .use(associatedTokenProgram())
     .use(memoProgram());
 }
 
